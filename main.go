@@ -31,6 +31,9 @@ var backupDir = flag.String("d", backupDirDefault, "自定义备份目录地址"
 //go:embed static
 var staticEmbededFiles embed.FS
 
+//go:embed ui
+var statEmbededFiles embed.FS
+
 //go:embed favicon.ico
 var faviconEmbededFile embed.FS
 
@@ -77,16 +80,22 @@ func staticFsFunc(writer http.ResponseWriter, request *http.Request) {
 	http.FileServer(http.FS(staticEmbededFiles)).ServeHTTP(writer, request)
 }
 
+func statFsFunc(writer http.ResponseWriter, request *http.Request) {
+	http.FileServer(http.FS(statEmbededFiles)).ServeHTTP(writer, request)
+}
+
 func faviconFsFunc(writer http.ResponseWriter, request *http.Request) {
 	http.FileServer(http.FS(faviconEmbededFile)).ServeHTTP(writer, request)
 }
 
 func run(firstDelay time.Duration) {
 	// 启动静态文件服务
+	http.HandleFunc("/stat/", web.BasicAuth(statFsFunc))
 	http.HandleFunc("/static/", web.BasicAuth(staticFsFunc))
 	http.HandleFunc("/favicon.ico", web.BasicAuth(faviconFsFunc))
 
-	http.HandleFunc("/", web.BasicAuth(web.WritingConfig))
+	http.HandleFunc("/backup", web.BasicAuth(web.WritingConfig))
+	http.HandleFunc("/", web.BasicAuth(web.IndexConfig))
 	http.HandleFunc("/save", web.BasicAuth(web.Save))
 	http.HandleFunc("/logs", web.BasicAuth(web.Logs))
 	http.HandleFunc("/clearLog", web.BasicAuth(web.ClearLog))
